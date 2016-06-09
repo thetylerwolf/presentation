@@ -17,6 +17,8 @@ AFRAME.registerSystem('firebase', {
       config = AFRAME.utils.styleParser.parse(config);
     }
 
+    if (!config) { return; }
+
     this.firebase = firebase.initializeApp(config);
     this.database = firebase.database();
 
