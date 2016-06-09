@@ -59,6 +59,12 @@
 	    var config = sceneEl.getAttribute('firebase');
 	    var self = this;
 
+	    if (!(config instanceof Object)) {
+	      config = AFRAME.utils.styleParser.parse(config);
+	    }
+
+	    if (!config) { return; }
+
 	    this.firebase = firebase.initializeApp(config);
 	    this.database = firebase.database();
 
@@ -118,6 +124,7 @@
 
 	    // Components.
 	    Object.keys(data).forEach(function setComponent (componentName) {
+	      if (componentName === 'parentId') { return; }
 	      entity.setAttribute(componentName, data[componentName]);
 	    });
 
@@ -133,6 +140,7 @@
 
 	    var entity = this.entities[id];
 	    Object.keys(components).forEach(function setComponent (componentName) {
+	      if (componentName === 'parentId') { return; }
 	      entity.setAttribute(componentName, components[componentName]);
 	    });
 	  },
@@ -228,7 +236,9 @@
 	  init: function () {
 	    var el = this.el;
 	    var system = el.sceneEl.systems.firebase;
-	    system.registerBroadcast(el, this.data.components);
+	    if (this.data.components.length) {
+	      system.registerBroadcast(el, this.data.components);
+	    }
 	  }
 	});
 
