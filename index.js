@@ -136,6 +136,8 @@ AFRAME.registerSystem('firebase', {
    * Broadcast.
    */
   tick: function (time) {
+    if (this.firebase) { return; }
+
     var broadcastingEntities = this.broadcastingEntities;
     var database = this.database;
     var sceneEl = this.sceneEl;
