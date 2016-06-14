@@ -30,7 +30,7 @@ AFRAME.registerSystem('firebase', {
     this.entities = {};
 
     database.child('entities').once('value', function (snapshot) {
-      self.handleInitialSync(snapshot.val());
+      self.handleInitialSync(snapshot.val() || {});
     });
 
     database.child('entities').on('child_added', function (data) {
@@ -76,7 +76,7 @@ AFRAME.registerSystem('firebase', {
     // Components.
     Object.keys(data).forEach(function setComponent (componentName) {
       if (componentName === 'parentId') { return; }
-      entity.setAttribute(componentName, data[componentName]);
+      setAttribute(entity, componentName, data[componentName]);
     });
 
     parentEl.appendChild(entity);
@@ -92,7 +92,7 @@ AFRAME.registerSystem('firebase', {
     var entity = this.entities[id];
     Object.keys(components).forEach(function setComponent (componentName) {
       if (componentName === 'parentId') { return; }
-      entity.setAttribute(componentName, components[componentName]);
+      setAttribute(entity, componentName, components[componentName]);
     });
   },
 
@@ -153,7 +153,7 @@ AFRAME.registerSystem('firebase', {
       var data = {};
 
       // Add components to broadcast once.
-      if (!el.firebaseBroadcastOnce) {
+      if (!el.firebaseBroadcastOnce && el.getAttribute('firebase-broadcast').componentsOnce) {
         components = components.concat(el.getAttribute('firebase-broadcast').componentsOnce);
         el.firebaseBroadcastOnce = true;
       }
@@ -167,7 +167,7 @@ AFRAME.registerSystem('firebase', {
 
       // Build data.
       components.forEach(function getData (componentName) {
-        data[componentName] = el.getComputedAttribute(componentName);
+        data[componentName] = getComputedAttribute(el, componentName);
       });
 
       // Update entry.
@@ -196,7 +196,7 @@ AFRAME.registerComponent('firebase-broadcast', {
   schema: {
     id: {default: ''},
     components: {default: ['position', 'rotation']},
-    componentsOnce: {default: []}
+    componentsOnce: {default: [], type: 'array'}
   },
 
   init: function () {
@@ -208,3 +208,28 @@ AFRAME.registerComponent('firebase-broadcast', {
     }
   }
 });
+
+/**
+ * Get attribute that handles individual component properties.
+ */
+function getComputedAttribute (el, attribute) {
+  // Handle individual component property.
+  var split = attribute.split('|');
+  if (split.length === 2) {
+    return el.getComputedAttribute(split[0])[split[1]];
+  }
+  return el.getComputedAttribute(attribute);
+}
+
+/**
+ * Set attribute that handles individual component properties.
+ */
+function setAttribute (el, attribute, value) {
+  // Handle individual component property.
+  var split = attribute.split('|');
+  if (split.length === 2) {
+    el.setAttribute(split[0], split[1], value);
+    return;
+  }
+  el.setAttribute(attribute, value);
+}
