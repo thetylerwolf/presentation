@@ -24,12 +24,11 @@ AFRAME.registerSystem('firebase', {
 
     this.channel = channelQueryParam || config.channel || 'default';
     this.firebase = firebase.initializeApp(config);
-    this.database = firebase.database().ref(this.channel);
+    var database = this.database = firebase.database().ref(this.channel);
 
     this.broadcastingEntities = {};
     this.entities = {};
 
-    var database = this.database;
     database.child('entities').once('value', function (snapshot) {
       self.handleInitialSync(snapshot.val());
     });
@@ -122,14 +121,16 @@ AFRAME.registerSystem('firebase', {
   /**
    * Register.
    */
-  registerBroadcast: function (el, components, interval) {
+  registerBroadcast: function (el) {
     var broadcastingEntities = this.broadcastingEntities;
     var database = this.database;
-    // Initialize entry.
+
+    // Initialize entry, get assigned a Firebase ID.
     var id = database.child('entities').push().key;
     el.setAttribute('firebase-broadcast', 'id', id);
     broadcastingEntities[id] = el;
-    // Remove entry when this clients disconnects. 
+
+    // Remove entry when client disconnects.
     database.child('entities').child(id).onDisconnect().remove();
   },
 
@@ -150,6 +151,12 @@ AFRAME.registerSystem('firebase', {
       var el = broadcastingEntities[id];
       var components = el.getAttribute('firebase-broadcast').components;
       var data = {};
+
+      // Add components to broadcast once.
+      if (!el.firebaseBroadcastOnce) {
+        components = components.concat(el.getAttribute('firebase-broadcast').componentsOnce);
+        el.firebaseBroadcastOnce = true;
+      }
 
       // Parent.
       if (el.parentNode !== sceneEl) {
@@ -188,14 +195,16 @@ AFRAME.registerComponent('firebase', {
 AFRAME.registerComponent('firebase-broadcast', {
   schema: {
     id: {default: ''},
-    components: {default: ['position', 'rotation']}
+    components: {default: ['position', 'rotation']},
+    componentsOnce: {default: []}
   },
 
   init: function () {
+    var data = this.data;
     var el = this.el;
     var system = el.sceneEl.systems.firebase;
-    if (this.data.components.length) {
-      system.registerBroadcast(el, this.data.components);
+    if (data.components.length) {
+      system.registerBroadcast(el);
     }
   }
 });

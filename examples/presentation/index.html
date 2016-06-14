@@ -86,7 +86,8 @@
                 firebase-broadcast="components: position, rotation">
         <a-entity id="head" mixin="avatar"
                   camera look-controls wasd-controls
-                  firebase-broadcast="components: mixin, position, raise-the-roof, rotation"
+                  firebase-broadcast="componentsOnce: mixin;
+                                      components: position, raise-the-roof, rotation"
                   raise-the-roof="false">
         </a-entity>
       </a-entity>
