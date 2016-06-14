@@ -1,8 +1,11 @@
 require('firebase');
+var parse = require('url-parse');
 
 if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
+
+var channelQueryParam = parse(location.href, true).query['aframe-firebase-channel'];
 
 /**
  * Firebase system.
@@ -19,25 +22,27 @@ AFRAME.registerSystem('firebase', {
 
     if (!config) { return; }
 
+    this.channel = channelQueryParam || config.channel || 'default';
     this.firebase = firebase.initializeApp(config);
-    this.database = firebase.database();
+    this.database = firebase.database().ref(this.channel);
 
     this.broadcastingEntities = {};
     this.entities = {};
 
-    firebase.database().ref('entities').once('value', function (snapshot) {
+    var database = this.database;
+    database.child('entities').once('value', function (snapshot) {
       self.handleInitialSync(snapshot.val());
     });
 
-    firebase.database().ref('entities').on('child_added', function (data) {
+    database.child('entities').on('child_added', function (data) {
       self.handleEntityAdded(data.key, data.val());
     });
 
-    firebase.database().ref('entities').on('child_changed', function (data) {
+    database.child('entities').on('child_changed', function (data) {
       self.handleEntityChanged(data.key, data.val());
     });
 
-    firebase.database().ref('entities').on('child_removed', function (data) {
+    database.child('entities').on('child_removed', function (data) {
       self.handleEntityRemoved(data.key);
     });
   },
@@ -110,7 +115,7 @@ AFRAME.registerSystem('firebase', {
     var self = this;
     Object.keys(this.broadcastingEntities).forEach(function (id) {
       delete self.broadcastingEntities[id];
-      firebase.database().ref('entities/' + id).remove();
+      self.database.child('entities/' + id).remove();
     });
   },
 
@@ -121,11 +126,11 @@ AFRAME.registerSystem('firebase', {
     var broadcastingEntities = this.broadcastingEntities;
     var database = this.database;
     // Initialize entry.
-    var id = database.ref().child('entities').push().key;
+    var id = database.child('entities').push().key;
     el.setAttribute('firebase-broadcast', 'id', id);
     broadcastingEntities[id] = el;
     // Remove entry when this clients disconnects. 
-    database.ref().child('entities').child(id).onDisconnect().remove();
+    database.child('entities').child(id).onDisconnect().remove();
   },
 
   /**
@@ -159,7 +164,7 @@ AFRAME.registerSystem('firebase', {
       });
 
       // Update entry.
-      database.ref('entities/' + id).update(data);
+      database.child('entities/' + id).update(data);
     });
   }
 });
@@ -172,7 +177,8 @@ AFRAME.registerComponent('firebase', {
     apiKey: {type: 'string'},
     authDomain: {type: 'string'},
     databaseURL: {type: 'string'},
-    storageBucket: {type: 'string'}
+    storageBucket: {type: 'string'},
+    channel: {type: 'string'}
   }
 });
 
