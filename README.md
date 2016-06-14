@@ -22,8 +22,10 @@ If you want to allow unauthenticated users (most should), then go into
 
 #### firebase
 
-Firebase configuration component for `<a-scene>`. Firebase will provide all of
-this for you when you set up a Firebase app.
+Firebase configuration component for `<a-scene>`. Firebase will provide the 
+first four properties when you set up a Firebase app. You select the optional
+channel name (if none given, 'default' is used).  Channels allow multiple apps,
+or multiple instances/rooms of the same app, to share one Firebase bucket.  
 
 | Property      | Description                     |
 | --------      | -----------                     |
@@ -31,6 +33,11 @@ this for you when you set up a Firebase app.
 | authDomain    | Firebase authentication domain. |
 | databaseURL   | Firebase database URL.          |
 | storageBucket | Firebase storage bucket URL.    |
+| channel       | Name of room/namespace          |
+The channel name can also be specified in the URL: 
+`mysite.com?aframe-firebase-channel=oahu` 
+ 
+
 
 #### firebase-broadcast
 
@@ -39,6 +46,11 @@ Broadcast component data to be synced across all clients using Firebase realtime
 | Property   | Description                                          | Default Value      |
 | --------   | -----------                                          | -------------      |
 | components | List of comma-delimited component names to broadcast | position, rotation |
+| componentsOnce | Sync initial value only; for components that don't change | 
+
+For example: `firebase-broadcast="components: material, geometry"`  
+To broadcast individual component properties, use the `component|property` syntax: 
+`firebase-broadcast="components: material|color, geometry|width"`
 
 ### Accessing the Firebase Object
 
