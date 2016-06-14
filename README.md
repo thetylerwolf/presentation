@@ -22,14 +22,14 @@ If you want to allow unauthenticated users (most should), then go into
 
 #### firebase
 
-Firebase configuration component for `<a-scene>`.  The apiKey, authDomain,
-databaseURL, and storageBucket are provided by Firebase (go to the Firebase
+Firebase configuration component for `<a-scene>`.  The `apiKey`, `authDomain`,
+`databaseURL`, and `storageBucket` are provided by Firebase (go to the Firebase
 console for your app and click on "Add Firebase to your web app").
 
 The optional channel name allows multiple A-Frame apps, or multiple
 instances/rooms of the same app, to share one Firebase bucket. If no channel is
-given, 'default' is used. The channel name can also be specified in the URL: 
-`mysite.com?aframe-firebase-channel=oahu` 
+given, 'default' is used. The channel name can also be specified in the URL:
+`mysite.com?aframe-firebase-channel=oahu`
 
 | Property      | Description                     |
 | --------      | -----------                     |
@@ -47,13 +47,16 @@ Broadcast component data to be synced across all clients using Firebase realtime
 | Property   | Description                                          | Default Value      |
 | --------   | -----------                                          | -------------      |
 | components | List of comma-delimited component names to broadcast | position, rotation |
-| componentsOnce | Sync initial value only; for components that don't change | 
+| componentsOnce | Sync initial value only; for components that don't change |
 
 For example:
+
 ```html
-<a-entity firebase-broadcast="components: material, geometry"><a-entity>  
+<a-entity firebase-broadcast="components: material, geometry"><a-entity>
 ```
-To broadcast individual component properties, use the `component|property` syntax: 
+
+To broadcast individual component properties, use the `component|property` syntax:
+
 ```html
 <a-entity firebase-broadcast="components: material|color, geometry|width"><a-entity>
 ```
@@ -125,3 +128,8 @@ Try positioning everyone at a different start point. In
 `examples/presentation/components/`, there is a `random-position-at` component
 that starts everyone at a different position (more specifically at one of the
 chairs).
+
+## Authors
+
+- [Kevin Ngo](https://twitter.com/andgokevin), Mozilla
+- [Amber Roy](https://twitter.com/amberroyvr), AltspaceVR
