@@ -31,12 +31,16 @@ instances/rooms of the same app, to share one Firebase bucket. If no channel is
 given, 'default' is used. The channel name can also be specified in the URL:
 `mysite.com?aframe-firebase-channel=oahu`
 
+The optional interval sets how often (in milliseconds) data is sent to Firebase.
+If omitted, data is broadcast on every render loop or tick of the scene.
+
 | Property      | Description                     |
 | --------      | -----------                     |
 | apiKey        | API key for Firebase.           |
 | authDomain    | Firebase authentication domain. |
 | channel       | Name of room/namespace.         |
 | databaseURL   | Firebase database URL.          |
+| interval      | Milliseconds between broadcasts.|
 | storageBucket | Firebase storage bucket URL.    |
 
 
