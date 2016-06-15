@@ -26,22 +26,22 @@ Firebase configuration component for `<a-scene>`.  The `apiKey`, `authDomain`,
 `databaseURL`, and `storageBucket` are provided by Firebase (go to the Firebase
 console for your app and click on "Add Firebase to your web app").
 
-The optional channel name allows multiple A-Frame apps, or multiple
+The optional `channel` name allows multiple A-Frame apps, or multiple
 instances/rooms of the same app, to share one Firebase bucket. If no channel is
 given, 'default' is used. The channel name can also be specified in the URL:
 `mysite.com?aframe-firebase-channel=oahu`
 
-The optional interval sets how often (in milliseconds) data is sent to Firebase.
-If omitted, data is broadcast on every render loop or tick of the scene.
+The optional `interval` sets how often (in milliseconds) data is sent to Firebase. 
+Default interval is 10 milliseconds.
 
-| Property      | Description                     |
-| --------      | -----------                     |
-| apiKey        | API key for Firebase.           |
-| authDomain    | Firebase authentication domain. |
-| channel       | Name of room/namespace.         |
-| databaseURL   | Firebase database URL.          |
-| interval      | Milliseconds between broadcasts.|
-| storageBucket | Firebase storage bucket URL.    |
+| Property      | Description                     | Required 
+| --------      | -----------                     | -------- 
+| apiKey        | API key for Firebase.           | yes      
+| authDomain    | Firebase authentication domain. | yes       
+| channel       | Name of room/namespace.         | no       
+| databaseURL   | Firebase database URL.          | yes      
+| interval      | Milliseconds between broadcasts.| no      
+| storageBucket | Firebase storage bucket URL.    | yes     
 
 
 #### firebase-broadcast
