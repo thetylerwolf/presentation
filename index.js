@@ -13,6 +13,8 @@ var channelQueryParam = parse(location.href, true).query['aframe-firebase-channe
 AFRAME.registerSystem('firebase', {
   init: function () {
     var sceneEl = this.sceneEl;
+    // Cannot use getComputedAttribute since component not yet attached,
+    // so set property defaults in this method instead of in schema.
     var config = sceneEl.getAttribute('firebase');
     var self = this;
 
@@ -28,6 +30,7 @@ AFRAME.registerSystem('firebase', {
 
     this.broadcastingEntities = {};
     this.entities = {};
+    this.interval = config.interval || 10;
 
     database.child('entities').once('value', function (snapshot) {
       self.handleInitialSync(snapshot.val() || {});
@@ -144,7 +147,7 @@ AFRAME.registerSystem('firebase', {
     var database = this.database;
     var sceneEl = this.sceneEl;
 
-    if (time - this.time < 10) { return; }
+    if (time - this.time < this.interval) { return; }
     this.time = time;
 
     Object.keys(broadcastingEntities).forEach(function broadcast (id) {
@@ -179,13 +182,15 @@ AFRAME.registerSystem('firebase', {
 /**
  * Data holder for the scene.
  */
+ 
 AFRAME.registerComponent('firebase', {
   schema: {
     apiKey: {type: 'string'},
     authDomain: {type: 'string'},
+    channel: {type: 'string'},
     databaseURL: {type: 'string'},
-    storageBucket: {type: 'string'},
-    channel: {type: 'string'}
+    interval: {type: 'number'},
+    storageBucket: {type: 'string'}
   }
 });
 
