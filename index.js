@@ -19,7 +19,8 @@ AFRAME.registerSystem('firebase', {
     this.interval = config.interval || 10;
 
     // Set up Firebase.
-    var firebaseWrapper = this.firebaseWrapper = new FirebaseWrapper(config);
+    var firebaseWrapper = this.firebaseWrapper = new FirebaseWrapper();
+    firebaseWrapper.init(config);
     this.firebase = firebaseWrapper.firebase;
     this.database = firebaseWrapper.database;
     firebaseWrapper.getAllEntities().then(this.handleInitialSync.bind(this));
@@ -148,7 +149,6 @@ AFRAME.registerSystem('firebase', {
 /**
  * Data holder for the scene.
  */
-
 AFRAME.registerComponent('firebase', {
   schema: {
     apiKey: {type: 'string'},
