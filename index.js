@@ -36,7 +36,6 @@ AFRAME.registerSystem('firebase', {
     var self = this;
     var broadcastingEntities = this.broadcastingEntities;
     Object.keys(data).forEach(function (entityId) {
-      if (broadcastingEntities[entityId]) { return; }
       self.handleEntityAdded(entityId, data[entityId]);
     });
   },
