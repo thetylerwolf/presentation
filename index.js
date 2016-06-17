@@ -1,52 +1,31 @@
-require('firebase');
-var parse = require('url-parse');
+var FirebaseWrapper = require('./firebaseWrapper');
 
 if (typeof AFRAME === 'undefined') {
   throw new Error('Component attempted to register before AFRAME was available.');
 }
-
-var channelQueryParam = parse(location.href, true).query['aframe-firebase-channel'];
 
 /**
  * Firebase system.
  */
 AFRAME.registerSystem('firebase', {
   init: function () {
-    var sceneEl = this.sceneEl;
-    // Cannot use getComputedAttribute since component not yet attached,
-    // so set property defaults in this method instead of in schema.
-    var config = sceneEl.getAttribute('firebase');
-    var self = this;
-
-    if (!(config instanceof Object)) {
-      config = AFRAME.utils.styleParser.parse(config);
-    }
-
+    // Get config.
+    var config = this.sceneEl.getAttribute('firebase');  // No getComputedAttr before attach.
+    if (!(config instanceof Object)) { config = AFRAME.utils.styleParser.parse(config); }
     if (!config) { return; }
-
-    this.channel = channelQueryParam || config.channel || 'default';
-    this.firebase = firebase.initializeApp(config);
-    var database = this.database = firebase.database().ref(this.channel);
 
     this.broadcastingEntities = {};
     this.entities = {};
     this.interval = config.interval || 10;
 
-    database.child('entities').once('value', function (snapshot) {
-      self.handleInitialSync(snapshot.val() || {});
-    });
-
-    database.child('entities').on('child_added', function (data) {
-      self.handleEntityAdded(data.key, data.val());
-    });
-
-    database.child('entities').on('child_changed', function (data) {
-      self.handleEntityChanged(data.key, data.val());
-    });
-
-    database.child('entities').on('child_removed', function (data) {
-      self.handleEntityRemoved(data.key);
-    });
+    // Set up Firebase.
+    var firebaseWrapper = this.firebaseWrapper = new FirebaseWrapper(config);
+    this.firebase = firebaseWrapper.firebase;
+    this.database = firebaseWrapper.database;
+    firebaseWrapper.getAllEntities().then(this.handleInitialSync.bind(this));
+    firebaseWrapper.onEntityAdded(this.handleEntityAdded.bind(this));
+    firebaseWrapper.onEntityChanged(this.handleEntityChanged.bind(this));
+    firebaseWrapper.onEntityRemoved(this.handleEntityRemoved.bind(this));
   },
 
   /**
@@ -110,31 +89,18 @@ AFRAME.registerSystem('firebase', {
   },
 
   /**
-   * Delete all broadcasting entities.
-   * (currently unused, handled by Firebase onDisconnect)
-   */
-  handleExit: function () {
-    var self = this;
-    Object.keys(this.broadcastingEntities).forEach(function (id) {
-      delete self.broadcastingEntities[id];
-      self.database.child('entities/' + id).remove();
-    });
-  },
-
-  /**
    * Register.
    */
   registerBroadcast: function (el) {
     var broadcastingEntities = this.broadcastingEntities;
-    var database = this.database;
 
     // Initialize entry, get assigned a Firebase ID.
-    var id = database.child('entities').push().key;
+    var id = this.firebaseWrapper.createEntity();
     el.setAttribute('firebase-broadcast', 'id', id);
     broadcastingEntities[id] = el;
 
     // Remove entry when client disconnects.
-    database.child('entities').child(id).onDisconnect().remove();
+    this.firebaseWrapper.removeEntityOnDisconnect(id);
   },
 
   /**
@@ -144,7 +110,7 @@ AFRAME.registerSystem('firebase', {
     if (!this.firebase) { return; }
 
     var broadcastingEntities = this.broadcastingEntities;
-    var database = this.database;
+    var firebaseWrapper = this.firebaseWrapper;
     var sceneEl = this.sceneEl;
 
     if (time - this.time < this.interval) { return; }
@@ -174,7 +140,7 @@ AFRAME.registerSystem('firebase', {
       });
 
       // Update entry.
-      database.child('entities/' + id).update(data);
+      firebaseWrapper.updateEntity(id, data);
     });
   }
 });
@@ -182,7 +148,7 @@ AFRAME.registerSystem('firebase', {
 /**
  * Data holder for the scene.
  */
- 
+
 AFRAME.registerComponent('firebase', {
   schema: {
     apiKey: {type: 'string'},
