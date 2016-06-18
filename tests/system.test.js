@@ -9,7 +9,7 @@ var FirebaseWrapper = require('../firebaseWrapper');
  * When we want to assert, we restore thse stubs and add a test stub.
  */
 suite('firebase system', function () {
-  setup(function () {
+  setup(function (done) {
     var sceneEl = this.sceneEl = document.createElement('a-scene');
     var system = this.system = sceneEl.systems.firebase;
     var sinon = this.sinon;
@@ -27,8 +27,12 @@ suite('firebase system', function () {
     sinon.stub(FirebaseWrapper.prototype, 'onEntityAdded', function () {});
     sinon.stub(FirebaseWrapper.prototype, 'onEntityChanged', function () {});
     sinon.stub(FirebaseWrapper.prototype, 'onEntityRemoved', function () {});
-  });
 
+    document.body.appendChild(sceneEl);
+    sceneEl.addEventListener('loaded', function () {
+      done();
+    });
+  });
 
   suite('init', function () {
     test('does not init Firebase without config', function () {
@@ -135,25 +139,84 @@ suite('firebase system', function () {
       });
     });
 
-    test('can add child entities', function (done) {
+    test('can add entities to specified parents', function (done) {
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+      var parentEntity  = document.createElement('a-entity');
+
+      system.init();
+      system.entities['entity:parent'] = parentEntity;
+      system.handleEntityAdded('entity:child', {
+        id: 'child',
+        parentId: 'entity:parent'
+      });
+
+      setTimeout(function () {
+        assert.ok(parentEntity.querySelector('#child'));
+        done();
+      });
+    });
+
+    test('can add nested entities', function (done) {
       var sceneEl = this.sceneEl;
       var system = this.system;
 
-      var parentEntity  = document.createElement('a-entity');
-      parentEntity.setAttribute('id', 'parent');
-      sceneEl.appendChild(parentEntity);
-
       system.init();
-      system.handleEntityAdded('entity:child', {
-        id: 'child',
-        parentId: 'parent',
-        mixin: 'b'
+      system.handleEntityAdded('entity:a', {
+        id: 'entity-A'
+      });
+      system.handleEntityAdded('entity:b', {
+        id: 'entity-B',
+        parentId: 'entity:a'
       });
 
-      process.nextTick(function () {
-        assert.equal(parentEntity.querySelector('#child').getAttribute('mixin', 'b'));
+      setTimeout(function () {
+        var entityA = sceneEl.querySelector('#entity-A');
+        assert.ok(entityA.querySelector('#entity-B'));
         done();
       });
+    });
+
+    test('does not setAttribute with parentId', function (done) {
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+
+      system.init();
+      system.handleEntityAdded('entity:a', {
+        id: 'entity-A',
+        parentId: 'xxx'
+      });
+
+      setTimeout(function () {
+        assert.notOk(sceneEl.querySelector('#entity-A').getAttribute('parentId'));
+        done();
+      });
+    });
+  });
+
+  suite('handleEntityChanged', function () {
+    test('updates entity', function () {
+      var system = this.system;
+      var entityA = document.createElement('a-entity');
+
+      system.init();
+      system.entities['entity:a'] = entityA;
+      system.handleEntityChanged('entity:a', {position: '1 1 1'});
+
+      assert.equal(entityA.getAttribute('position').x, 1);
+    });
+
+    test('does not update entity if broadcasting', function () {
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+      var entityA = document.createElement('a-entity');
+      entityA.setAttribute('position', '0 0 0');
+
+      system.init();
+      system.broadcastingEntities['entity:a'] = entityA;
+      system.handleEntityChanged('entity:a', {position: '1 1 1'});
+
+      assert.equal(entityA.getAttribute('position').x, 0);
     });
   });
 });

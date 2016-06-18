@@ -57,7 +57,6 @@ AFRAME.registerSystem('firebase', {
 
     // Components.
     Object.keys(data).forEach(function setComponent (componentName) {
-      if (componentName === 'parentId') { return; }
       setAttribute(entity, componentName, data[componentName]);
     });
 
