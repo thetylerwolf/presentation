@@ -12,28 +12,34 @@ suite('firebase system', function () {
   setup(function () {
     var sceneEl = this.sceneEl = document.createElement('a-scene');
     var system = this.system = sceneEl.systems.firebase;
+    var sinon = this.sinon;
+
     sceneEl.setAttribute('firebase',
                          'apiKey: a; authDomain: b; databaseURL: c; storageBucket: d');
     system.sceneEl = sceneEl;
 
-    this.sinon.stub(FirebaseWrapper.prototype, 'init', function () {});
-    this.sinon.stub(FirebaseWrapper.prototype, 'getAllEntities', function () {
+    sinon.stub(FirebaseWrapper.prototype, 'init', function () {});
+    sinon.stub(FirebaseWrapper.prototype, 'getAllEntities', function () {
       return new Promise(function () {
         resolve({});
       });
     });
-    this.sinon.stub(FirebaseWrapper.prototype, 'onEntityAdded', function () {});
-    this.sinon.stub(FirebaseWrapper.prototype, 'onEntityChanged', function () {});
-    this.sinon.stub(FirebaseWrapper.prototype, 'onEntityRemoved', function () {});
+    sinon.stub(FirebaseWrapper.prototype, 'onEntityAdded', function () {});
+    sinon.stub(FirebaseWrapper.prototype, 'onEntityChanged', function () {});
+    sinon.stub(FirebaseWrapper.prototype, 'onEntityRemoved', function () {});
   });
 
 
   suite('init', function () {
     test('does not init Firebase without config', function () {
+      var initSpy;
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+
       FirebaseWrapper.prototype.init.restore();
-      this.sceneEl.removeAttribute('firebase');
-      var initSpy = this.sinon.spy(FirebaseWrapper.prototype, 'init');
-      this.system.init();
+      sceneEl.removeAttribute('firebase');
+      initSpy = sinon.spy(FirebaseWrapper.prototype, 'init');
+      system.init();
       assert.notOk(initSpy.called);
     });
 
@@ -53,10 +59,12 @@ suite('firebase system', function () {
   suite('handleInitialSync', function () {
     test('inserts entities read from database', function (done) {
       var sceneEl = this.sceneEl;
-      this.system.init();
-      this.system.handleInitialSync({
-        entityA: {id: 'a', position: '1 1 1'},
-        entityB: {id: 'b', rotation: '90 90 90'}
+      var system = this.system;
+
+      system.init();
+      system.handleInitialSync({
+        'entity:a': {id: 'a', position: '1 1 1'},
+        'entity:b': {id: 'b', rotation: '90 90 90'}
       });
 
       process.nextTick(function () {
@@ -70,12 +78,80 @@ suite('firebase system', function () {
 
     test('does not re-add entity', function (done) {
       var sceneEl = this.sceneEl;
-      this.system.init();
-      this.system.entities['entityA'] = document.createElement('a-entity');
-      this.system.handleInitialSync({entityA: {id: 'a', position: '1 1 1'}});
+      var system = this.system;
+
+      system.init();
+      system.entities['entity:a'] = document.createElement('a-entity');
+      system.handleInitialSync({'entity:a': {id: 'a', position: '1 1 1'}});
 
       process.nextTick(function () {
         assert.notOk(sceneEl.querySelector('#a'));
+        done();
+      });
+    });
+  });
+
+  suite('handleEntityAdded', function () {
+    test('adds entity', function (done) {
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+
+      system.init();
+      system.handleEntityAdded('entity:a', {id: 'a', material: {color: 'red'}});
+
+      process.nextTick(function () {
+        var entityA = sceneEl.querySelector('#a');
+        assert.equal(system.entities['entity:a'], entityA);
+        assert.equal(entityA.getAttribute('material').color, 'red');
+        done();
+      });
+    });
+
+    test('does not re-add entity if already added', function (done) {
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+
+      system.init();
+      system.entities['entity:a'] = document.createElement('a-entity');
+      system.handleEntityAdded('entity:a', {id: 'a'});
+
+      process.nextTick(function () {
+        assert.notOk(sceneEl.querySelector('#a'));
+        done();
+      });
+    });
+
+    test('does not re-add entity if already broadcasting', function (done) {
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+
+      system.init();
+      system.broadcastingEntities['entity:a'] = document.createElement('a-entity');
+      system.handleEntityAdded('entity:a', {id: 'a'});
+
+      process.nextTick(function () {
+        assert.notOk(sceneEl.querySelector('#a'));
+        done();
+      });
+    });
+
+    test('can add child entities', function (done) {
+      var sceneEl = this.sceneEl;
+      var system = this.system;
+
+      var parentEntity  = document.createElement('a-entity');
+      parentEntity.setAttribute('id', 'parent');
+      sceneEl.appendChild(parentEntity);
+
+      system.init();
+      system.handleEntityAdded('entity:child', {
+        id: 'child',
+        parentId: 'parent',
+        mixin: 'b'
+      });
+
+      process.nextTick(function () {
+        assert.equal(parentEntity.querySelector('#child').getAttribute('mixin', 'b'));
         done();
       });
     });
